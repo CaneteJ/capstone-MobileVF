@@ -8,6 +8,7 @@ import * as Location from "expo-location";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "./config/firebase";
 
+
 export default function Dashboard() {
     const navigation = useNavigation();
     const { user } = useContext(UserContext);
@@ -166,6 +167,12 @@ export default function Dashboard() {
         );
     };
 
+    const [isActive, setIsActive] = useState(false);
+
+    const handleReservationStatusClick = () => {
+        setIsActive(!isActive);
+    };
+
     return (
         <View style={styles.container}>
             <Image  source={{ uri: 'https://i.imgur.com/Y6azwpB.png' }} style={styles.backgroundImage} />
@@ -192,30 +199,25 @@ export default function Dashboard() {
                             }}
                         />
                     </View>
-                    <View style={{ maxWidth: 350, marginBottom: 20 }}>
-                        <View style={{ flexDirection: "row", marginBottom: 0 }}>
-                            <View style={{ flex: 1, marginLeft: "5%" }}>
-                                <Image
-                                    source={require("./images/ayala.jpg")}
-                                    style={{ width: "100%", marginTop: "30%", borderBottomLeftRadius: 20, borderWidth: 1, borderColor: "#FFD700" }}
-                                />
+                    
+                    <View style={{ maxWidth: 400, marginBottom: 20 }}>
+                        <View >
+                        <View style={{ justifyContent: 'center', alignItems: 'center'}}>
+                            <View style={styles.additionalCard}>
+                                <Text style={styles.additionalCardTitle}>Explore</Text>
+                                <Text style={styles.additionalCardContent}>More parking areas are available here!!</Text>
+                                <TouchableOpacity style={styles.additionalButton} onPress={() => alert('Button Pressed')}>
+                                <Text style={styles.additionalButtonText}>Explore</Text>
+                                </TouchableOpacity>
                             </View>
-                            <View style={{ flex: 1.5, paddingTop: "25.5%" }}>
-                                <View style={{ backgroundColor: "white", opacity: 0.8, padding: "6%", borderBottomRightRadius: 20 }}>
-                                    <Text style={{ fontSize: 18, fontWeight: "bold" }}>Explore</Text>
-                                    <Text style={{ fontSize: 14, color: "#888" }}>more nearby parking spaces</Text>
-                                    <TouchableOpacity
-                                        onPress={handleViewRecentParked}
-                                        style={{ marginTop: 13.4, backgroundColor: "#FFD700", padding: 1, borderRadius: 2 }}
-                                    >
-                                        <Text style={{ color: "white", textAlign: "center" }}>View</Text>
-                                    </TouchableOpacity>
-                                </View>
                             </View>
                         </View>
                     </View>
-                </View>
 
+                   
+
+                </View>
+           
                 <View style={styles.tabBarContainer}>
                     <View style={[styles.tabBar, { opacity: 0.8 }]}>
                         <TouchableOpacity style={styles.tabBarButton} onPress={goToProfile}>
@@ -269,9 +271,9 @@ export default function Dashboard() {
                 </Modal>
             </View>
         </View>
+        
     );
 }
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -416,5 +418,96 @@ const styles = StyleSheet.create({
         resizeMode: "cover",
         borderRadius: 10,
     },
-   
+    card: {
+        width: '90%',
+        maxWidth: 400, // Maximum width for larger screens
+        height: '230%',
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 5,
+        justifyContent: 'center', // Center content vertically within the card
+        alignItems: 'center', // Center content horizontally within the card
+      },
+      cardContent: {
+        backgroundColor: "white",
+        opacity: 0.8,
+        padding: "6%",
+        borderRadius: 20,
+      },
+      cardTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+      },
+      cardSubtitle: {
+        fontSize: 14,
+        color: "#888",
+      },
+      button: {
+        marginTop: 13.4,
+        backgroundColor: "#FFD700",
+        padding: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+      },
+      buttonText: {
+        color: "white",
+        textAlign: "center",
+      },
+      additionalCard: {
+        width: '90%',
+        maxWidth: 400, // Maximum width for larger screens
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 5,
+        marginTop: 10, // Adjust spacing between the additional card and the main card
+      },
+      additionalCardTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
+      },
+      additionalCardContent: {
+        fontSize: 16,
+        marginBottom: 20,
+      },
+      additionalButton: {
+        backgroundColor: '#007BFF',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+        alignItems: 'center',
+      },
+      additionalButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        
+      },
+    reservationStatusContainer: {
+        padding: 10,
+        borderRadius: 20,
+        marginBottom: 50, // Adjust the marginBottom to move the reservation status lower
+        alignSelf: 'center',
+        width: '90%',
+        borderWidth: 1,
+        borderColor: 'black',
+    },
+    reservationStatusText: {
+        fontSize: 16,
+    },
+    active: {
+        backgroundColor: "#39e75f",
+    },
+    inactive: {
+        backgroundColor: "gray",
+    },
 });

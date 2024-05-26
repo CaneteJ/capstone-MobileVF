@@ -569,12 +569,24 @@ export default function ReservationScreen({ route }) {
             value={selectedFloor}
           />
         </View>
-        <Button
-          title="Reserve Slot"
-          onPress={handleReservation}
-          color="#39e75f"
-          accessibilityLabel="Reserve your selected parking slot"
-        />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around'}}>
+        <View style={{ flex: 1, margin: 5 }}>
+            <Button
+            title="Reserve Slot"
+            onPress={handleReservation}
+            color="#39e75f"
+            accessibilityLabel="Reserve your selected parking slot"
+            />
+        </View>
+        <View style={{ flex: 1, margin: 5 }}>
+            <Button
+            title="Cancel Slot"
+            onPress={handleReservation}
+            color="red"
+            accessibilityLabel="Cancel your reserved parking slot"
+            />
+        </View>
+        </View>
       {reservedSlots.length > 0 && (
       <View>
         <Text style={styles.infoTextTitle}>Your Reservation</Text>
