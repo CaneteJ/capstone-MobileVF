@@ -191,7 +191,7 @@ const Map = ({ route }) => {
     };
 
     const handleSelectLocation = (managementName) => {
-        navigation.navigate("reservation", { item: { managementName: selectedPlaceName } });
+        navigation.navigate("reservation", { item: { managementName: selectedPlaceName, parkingPay: selectedParkingPay } });
         console.log("Navigating with place:", selectedPlaceName);
     };
 

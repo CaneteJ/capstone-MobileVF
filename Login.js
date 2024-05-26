@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {View, Text, TextInput, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from './config/firebase';
+import { registerIndieID } from 'native-notify';
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 export function LoginScreen() {
@@ -12,6 +13,7 @@ export function LoginScreen() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
+ 
   const handleGoToDashboard = (user) => {
     navigation.navigate('Profiles', { user });
 };
@@ -22,10 +24,8 @@ export function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
   
-    
       if (!userCredential || !userCredential.user) {
         console.error('User not found in userCredential');
         return;
@@ -34,22 +34,22 @@ export function LoginScreen() {
       const { user } = userCredential;
       console.log('Authentication successful for UID:', user.uid);
   
-  
+      try {
+        await registerIndieID(user.email, 21460, 'rLQ1cRoXNKwLkZE4aWOyKw');
+        console.log('Indie ID registration successful for UID:', user.email);
+      } catch (error) {
+        console.error('Error during Indie ID registration:', error);
+      }
       const userDocRef = doc(db, "user", user.uid);
-  
       const userDoc = await getDoc(userDocRef);
-  
       if (userDoc.exists()) {
         const userData = userDoc.data();
-    
-        navigation.navigate('Dashboard', { user: userData });
+        navigation.navigate('Dashboard', { user: userData, uid: user.uid });
       } else {
         console.error(`No user data found in Firestore for user: ${user.uid}`);
       }
     } catch (error) {
-      
       console.error('Error logging in:', error.message || error);
-  
     }
   };
 
@@ -60,7 +60,6 @@ export function LoginScreen() {
   const handleRememberMe = () => {
     setRememberMe(!rememberMe);
   };
-  
   
 
   return (
