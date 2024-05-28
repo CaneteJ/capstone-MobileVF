@@ -8,7 +8,6 @@ import * as Location from "expo-location";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "./config/firebase";
 
-
 export default function Dashboard() {
     const navigation = useNavigation();
     const { user } = useContext(UserContext);
@@ -19,6 +18,9 @@ export default function Dashboard() {
 
     const [isSidebarVisible, setSidebarVisible] = useState(false);
     const [recommended, setRecommended] = useState([]);
+    const [isActive, setIsActive] = useState(false);
+    const [reservationConfirmed, setReservationConfirmed] = useState(false); // Track reservation status
+
     const carouselImages = [
         { image: { uri: 'https://www.saifulbouquet.com/wp-content/uploads/2020/04/featured-DSC00889.jpg' }, text: "Oakridge Parking Lot" },
         { image:  { uri: 'https://media-cdn.tripadvisor.com/media/photo-s/10/08/e5/a6/mall-exterior.jpg' }, text: "Country Mall" },
@@ -26,24 +28,21 @@ export default function Dashboard() {
         { image: { uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfMENYcdscVVk9zQdRBXEnelebDd04UbZ9KW36V9wwLw&s' }, text: "Banilad Town Centre" },
         { image:  { uri: 'https://i.pinimg.com/736x/5d/e2/c5/5de2c5ef0e446ddb39f0d090dcf2c033.jpg' }, text: "Pacific Mall" },
     ];
+
     useEffect(() => {
         const fetchRecommended = async () => {
             const promises = [];
 
             for (const c of carouselImages) {
                 const q = query(collection(db, "establishments"), where("managementName", "==", c.text));
-
                 promises.push(getDocs(q));
             }
 
-            // Collect all the query results together into a single list
             const snapshots = await Promise.all(promises);
-
             const recommendations = [];
             for (const snap of snapshots) {
                 for (const doc of snap.docs) {
                     const establishment = doc.data();
-
                     recommendations.push({
                         id: doc.id,
                         ...establishment,
@@ -55,6 +54,12 @@ export default function Dashboard() {
 
         fetchRecommended();
     }, []);
+
+    useEffect(() => {
+        if (reservationConfirmed) {
+            setIsActive(true);
+        }
+    }, [reservationConfirmed]);
 
     const handleCarouselCard = (text) => {
         setSidebarVisible(false);
@@ -112,11 +117,9 @@ export default function Dashboard() {
 
             let currentLocation;
 
-            // Keep trying to get the location until it's available
             while (!currentLocation) {
                 currentLocation = await Location.getCurrentPositionAsync({});
                 if (!currentLocation) {
-                    // Wait for a short period before trying again
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
             }
@@ -167,15 +170,15 @@ export default function Dashboard() {
         );
     };
 
-    const [isActive, setIsActive] = useState(false);
-
     const handleReservationStatusClick = () => {
-        setIsActive(!isActive);
+        if (isActive) {
+            navigation.navigate("Map");
+        }
     };
 
     return (
         <View style={styles.container}>
-            <Image  source={{ uri: 'https://i.imgur.com/Y6azwpB.png' }} style={styles.backgroundImage} />
+            <Image source={{ uri: 'https://i.imgur.com/Y6azwpB.png' }} style={styles.backgroundImage} />
 
             <View style={styles.container}>
                 <Image style={styles.navbar} />
@@ -206,7 +209,7 @@ export default function Dashboard() {
                             <View style={styles.additionalCard}>
                                 <Text style={styles.additionalCardTitle}>Explore</Text>
                                 <Text style={styles.additionalCardContent}>More parking areas are available here!!</Text>
-                                <TouchableOpacity style={styles.additionalButton} onPress={() => alert('Button Pressed')}>
+                                <TouchableOpacity style={styles.additionalButton} onPress={() => navigation.navigate("Map")}>
                                 <Text style={styles.additionalButtonText}>Explore</Text>
                                 </TouchableOpacity>
                             </View>
@@ -214,8 +217,15 @@ export default function Dashboard() {
                         </View>
                     </View>
 
-                   
-
+                    <TouchableOpacity
+                        style={[styles.reservationStatusContainer, isActive ? styles.active : styles.inactive]}
+                        onPress={handleReservationStatusClick}
+                        disabled={!isActive}
+                    >
+                        <Text style={styles.reservationStatusText}>
+                            Reservation Status: {isActive ? "Active" : "Inactive"}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
            
                 <View style={styles.tabBarContainer}>
@@ -252,17 +262,17 @@ export default function Dashboard() {
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.sidebarButton} onPress={() => handleCardClick("Transaction")}>
-                                    <Image   source={{ uri: 'https://i.imgur.com/MeRPAqt.png' }} style={styles.sidebarIcon} />
+                                    <Image source={{ uri: 'https://i.imgur.com/MeRPAqt.png' }} style={styles.sidebarIcon} />
                                     <Text style={styles.sidebarButtonText}>Transaction</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.sidebarButton} onPress={() => handleCardClick("Park")}>
-                                    <Image   source={{ uri: 'https://i.imgur.com/vetauvM.png' }} style={styles.sidebarIcon} />
+                                    <Image source={{ uri: 'https://i.imgur.com/vetauvM.png' }} style={styles.sidebarIcon} />
                                     <Text style={styles.sidebarButtonText}>Parking</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.sidebarButton} onPress={() => handleCardClick("Start")}>
-                                    <Image   source={{ uri: 'https://i.imgur.com/YzzzEXD.png' }} style={styles.sidebarIcon} />
+                                    <Image source={{ uri: 'https://i.imgur.com/YzzzEXD.png' }} style={styles.sidebarIcon} />
                                     <Text style={styles.sidebarButtonText}>Log Out</Text>
                                 </TouchableOpacity>
                             </View>
@@ -271,9 +281,9 @@ export default function Dashboard() {
                 </Modal>
             </View>
         </View>
-        
     );
 }
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -327,8 +337,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: "#FFD700",
         position: "relative",
-        backgroundColor: "white", // Ensure background color
-
+        backgroundColor: "white",
     },
     carouselImage: {
         width: "100%",
@@ -342,9 +351,9 @@ const styles = StyleSheet.create({
         color: "white",
         fontSize: 20,
         fontWeight: "bold",
-        backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional for better visibility
-        padding: 5,  // Optional for better visibility
-        zIndex: 1,  // Ensure this is higher than the image
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        padding: 5,
+        zIndex: 1,
     },
     tabBarContainer: {
         marginTop: "60%",
@@ -402,16 +411,9 @@ const styles = StyleSheet.create({
     parkedHistoryContainer: {
         overflow: "hidden",
         marginHorizontal: 10,
-
         position: "relative",
         marginTop: 20,
     },
-    overflow: "hidden",
-    marginHorizontal: 10,
-
-    position: "relative",
-    marginTop: 20,
-
     historyItemImage: {
         width: 150,
         height: 100,
@@ -420,7 +422,7 @@ const styles = StyleSheet.create({
     },
     card: {
         width: '90%',
-        maxWidth: 400, // Maximum width for larger screens
+        maxWidth: 400,
         height: '230%',
         backgroundColor: '#fff',
         borderRadius: 10,
@@ -430,37 +432,37 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 5,
         elevation: 5,
-        justifyContent: 'center', // Center content vertically within the card
-        alignItems: 'center', // Center content horizontally within the card
-      },
-      cardContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cardContent: {
         backgroundColor: "white",
         opacity: 0.8,
         padding: "6%",
         borderRadius: 20,
-      },
-      cardTitle: {
+    },
+    cardTitle: {
         fontSize: 18,
         fontWeight: "bold",
-      },
-      cardSubtitle: {
+    },
+    cardSubtitle: {
         fontSize: 14,
         color: "#888",
-      },
-      button: {
+    },
+    button: {
         marginTop: 13.4,
         backgroundColor: "#FFD700",
         padding: 10,
         borderRadius: 5,
         alignItems: 'center',
-      },
-      buttonText: {
+    },
+    buttonText: {
         color: "white",
         textAlign: "center",
-      },
-      additionalCard: {
+    },
+    additionalCard: {
         width: '90%',
-        maxWidth: 400, // Maximum width for larger screens
+        maxWidth: 400,
         backgroundColor: '#fff',
         borderRadius: 10,
         padding: 20,
@@ -469,37 +471,38 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 5,
         elevation: 5,
-        marginTop: 10, // Adjust spacing between the additional card and the main card
-      },
-      additionalCardTitle: {
+        marginTop: 10,
+    },
+    additionalCardTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 10,
-      },
-      additionalCardContent: {
+    },
+    additionalCardContent: {
         fontSize: 16,
         marginBottom: 20,
-      },
-      additionalButton: {
+    },
+    additionalButton: {
         backgroundColor: '#007BFF',
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 5,
         alignItems: 'center',
-      },
-      additionalButtonText: {
+    },
+    additionalButtonText: {
         color: '#fff',
         fontSize: 16,
-        
-      },
+    },
     reservationStatusContainer: {
         padding: 10,
         borderRadius: 20,
-        marginBottom: 50, // Adjust the marginBottom to move the reservation status lower
+        marginBottom: 50,
         alignSelf: 'center',
         width: '90%',
         borderWidth: 1,
         borderColor: 'black',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     reservationStatusText: {
         fontSize: 16,
