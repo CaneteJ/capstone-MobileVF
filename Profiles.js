@@ -499,8 +499,8 @@ const styles = StyleSheet.create({
   },
   profileImage: {
     // Your existing styles for the profile image
-    width: 300, 
-    height: 300,
+    width: 200, 
+    height: 170,
   },
   image: {
     // Your existing styles for other images

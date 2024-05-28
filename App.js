@@ -22,9 +22,11 @@ import ForgotScreen from "./Forgot"
 import UserProvider from './UserProvider';
 import reservationScreen from './reservation'
 import ReservationDetailsScreen from './reservationDetails';
+import registerNNPushToken from 'native-notify';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  registerNNPushToken(21460, 'rLQ1cRoXNKwLkZE4aWOyKw');
 
   return (
     

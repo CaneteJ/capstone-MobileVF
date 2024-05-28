@@ -12,6 +12,7 @@ import { useStoreState } from "pullstate";
 import style from "react-native-modal-picker/style";
 import RNPickerSelect from 'react-native-picker-select';
 
+
 const SLOT_PRICE = 30;
 
 export default function ReservationScreen({ route }) {
