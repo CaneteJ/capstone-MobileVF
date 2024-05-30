@@ -9,9 +9,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LocationStore } from "./store";
 import { useStoreState } from "pullstate";
-import style from "react-native-modal-picker/style";
 import RNPickerSelect from 'react-native-picker-select';
-
 
 const SLOT_PRICE = 30;
 
@@ -34,6 +32,7 @@ export default function ReservationScreen({ route }) {
     const [managementPrice, setManagementPrice] = useState(0);
     const [alertShown, setAlertShown] = useState(false); 
     const [fee, setFee] = useState('');
+    const [successfullyReservedSlots, setSuccessfullyReservedSlots] = useState([]);
 
     useEffect(() => {
         const reservationsRef = collection(db, "reservations");
@@ -233,6 +232,7 @@ export default function ReservationScreen({ route }) {
                             setReservedSlots((prevSlots) => prevSlots.filter((slot) => slot.slotNumber !== slotNumber || slot.managementName !== item.managementName));
                             setSelectedSlot(null);
                             Alert.alert("Reservation Canceled", `Reservation for Slot ${slotNumber} at ${item.managementName} canceled successfully!`);
+                            setSuccessfullyReservedSlots((prev) => prev.filter((slot) => slot !== slotNumber));
                         },
                     },
                 ],
@@ -319,7 +319,15 @@ export default function ReservationScreen({ route }) {
     }, [db, item.managementName]);
 
     const handleReservation = async () => {
-        if (selectedSlot !== null && !reservedSlots.some(r => r.slotNumber === selectedSlot.slotNumber && r.floorTitle === selectedSlot.floorTitle)) {
+        // Prevent multiple reservations
+        if (reservedSlots.length > 0) {
+            Alert.alert("Reservation Limit", "You can only reserve one slot at a time.", [
+                { text: "OK", style: "default" },
+            ]);
+            return;
+        }
+
+        if (selectedSlot !== null) {
             Alert.alert(
                 'Confirm Reservation',
                 `Are you sure you want to reserve Slot ${selectedSlot}?`,
@@ -370,6 +378,7 @@ export default function ReservationScreen({ route }) {
                                 };
                                 await addDoc(notificationsRef, notificationData);
                                 Alert.alert('Reservation Successful', `Slot ${selectedSlot} at ${item.managementName} reserved successfully!`);
+                                setSuccessfullyReservedSlots([...successfullyReservedSlots, selectedSlot]);
                             } catch (error) {
                                 console.error('Error saving reservation:', error);
                                 Alert.alert('Reservation Failed', 'Could not complete your reservation. Please try again.');
@@ -387,10 +396,12 @@ export default function ReservationScreen({ route }) {
     };
 
     const handleCancelReservation = async () => {
-        if (selectedSlot !== null) {
+        const reservedSlot = reservedSlots.find(slot => slot.slotNumber === selectedSlot && slot.managementName === item.managementName);
+    
+        if (reservedSlot) {
             Alert.alert(
                 'Cancel Reservation',
-                `Are you sure you want to cancel Slot ${selectedSlot}?`,
+                `Are you sure you want to cancel Slot ${selectedSlot} at ${item.managementName}?`,
                 [
                     {
                         text: 'Cancel',
@@ -400,17 +411,26 @@ export default function ReservationScreen({ route }) {
                         text: 'OK',
                         onPress: async () => {
                             try {
-                                const q = query(collection(db, "reservations"), where("slotId", "==", selectedSlot), where("userEmail", "==", email));
+                                // Adjust the query to include both slotNumber and managementName
+                                const q = query(
+                                    collection(db, "reservations"), 
+                                    where("slotId", "==", selectedSlot - 1),
+                                    where("managementName", "==", item.managementName),
+                                    where("userEmail", "==", email)  // Assuming userEmail is also a key to identify the reservation
+                                );
                                 const querySnapshot = await getDocs(q);
-
+    
                                 querySnapshot.forEach(async (doc) => {
-                                    await updateDoc(doc.ref, { status: 'Canceled' });
-                                    await deleteDoc(doc.ref);
+                                    console.log("Document found: ", doc.id); // Log to check if documents are being fetched
+                                    await deleteDoc(doc.ref);  // Delete each document that matches the query
                                 });
-
-                                setReservedSlots((prevSlots) => prevSlots.filter((slot) => slot.slotNumber !== selectedSlot));
+                                
+    
+                                setReservedSlots(prevSlots => prevSlots.filter(slot => slot.slotNumber !== selectedSlot || slot.managementName !== item.managementName));
                                 setSelectedSlot(null);
-                                Alert.alert("Reservation Canceled", `Reservation for Slot ${selectedSlot} canceled successfully!`);
+                                Alert.alert("Reservation Canceled", `Reservation for Slot ${selectedSlot} at ${item.managementName} canceled successfully!`);
+                                setSuccessfullyReservedSlots(prev => prev.filter(slot => slot !== selectedSlot));
+    
                             } catch (error) {
                                 console.error("Error canceling reservation:", error);
                                 Alert.alert("Cancellation Failed", "Could not cancel your reservation. Please try again.", [{ text: "OK", style: "default" }]);
@@ -421,12 +441,12 @@ export default function ReservationScreen({ route }) {
                 { cancelable: false }
             );
         } else {
-            Alert.alert('Invalid Cancellation', 'Please select a valid slot before canceling.', [
+            Alert.alert('Invalid Cancellation', 'Please select a valid reserved slot before canceling.', [
                 { text: 'OK', style: 'default' },
             ]);
         }
     };
-
+    
     const totalAmount = reservedSlots.length * SLOT_PRICE;
     return (
         <View style={styles.container}>
@@ -453,6 +473,7 @@ export default function ReservationScreen({ route }) {
                                                 styles.slotButton,
                                                 slot.occupied && styles.occupiedSlotButton,
                                                 selectedSlot === slot.slotNumber && styles.highlightedSlotButton,
+                                                successfullyReservedSlots.includes(slot.slotNumber) && styles.successfullyReservedSlotButton,
                                             ]}
                                             onPress={() => setSelectedSlot(slot.slotNumber)}
                                             disabled={slot.occupied}
@@ -640,7 +661,10 @@ const styles = StyleSheet.create({
         borderWidth: 3,
         borderColor: "red",
     },
-
+    successfullyReservedSlotButton: {
+        borderWidth: 3,
+        borderColor: "#FFD700",  // Add this style for successfully reserved slots
+    },
     dropdownContainer: {
         flexDirection: "row",
         alignItems: "center",
